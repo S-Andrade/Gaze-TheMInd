@@ -38,6 +38,19 @@ def main():
         # Initialize drawing utility
         mp_drawing = mp.solutions.drawing_utils
 
+        mp_face_mesh = mp.solutions.face_mesh
+        # Setup Face Mesh with iris tracking
+        face_mesh = mp_face_mesh.FaceMesh(
+            max_num_faces=1,
+            refine_landmarks=True,  # Enables iris landmarks
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
+
+        # Initialize drawing utility
+        mp_drawing = mp.solutions.drawing_utils
+        mp_drawing_styles = mp.solutions.drawing_styles
+
         logger.log_info("Initialize MediaPipe Pose.")
     except Exception as e:
             logger.log_exception("An unexpected error occurred while Initialize MediaPipe Pose", e)
@@ -72,6 +85,7 @@ def main():
         
         # Process the frame with MediaPipe Pose
         results = pose.process(rgb_frame)
+        results_m = face_mesh.process(rgb_frame)
         
         if results.pose_landmarks:
                         
@@ -86,14 +100,33 @@ def main():
             temp = []
             for l in landmarks:
                 temp += [l.x, l.y, l.z]
+
+        
+        if results_m.multi_face_landmarks:
+        #break
+            for face_landmarks in results_m.multi_face_landmarks:
+
+                left = face_landmarks.landmark[468]
+                print([left.x, left.y, left.z])
+                right = face_landmarks.landmark[473]
+                temp += [left.x, left.y, left.z, right.x, right.y, right.z]
+
+                # Draw iris landmarks
+                mp_drawing.draw_landmarks(
+                    image=frame,
+                    landmark_list=face_landmarks,
+                    connections=mp_face_mesh.FACEMESH_IRISES,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=mp_drawing_styles
+                        .get_default_face_mesh_iris_connections_style())
                 
             
-            poly_pred = poly.predict([temp])
-            print(poly_pred[0].encode())
-            logger.log_message("Current gaze target", poly_pred[0])
-            logger.log_message("vector",str(temp) )
-            if socket:
-                sGaze.send(poly_pred[0].encode())
+        poly_pred = poly.predict([temp])
+        print(poly_pred[0].encode())
+        logger.log_message("Current gaze target", poly_pred[0])
+        logger.log_message("vector",str(temp) )
+        if socket:
+            sGaze.send(poly_pred[0].encode())
         
         cv2.imshow('Body Tracking', frame)
         # Break the loop with 'q'
