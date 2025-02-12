@@ -58,7 +58,7 @@ def main():
     
     try:
         logger.log_info("Start video capture...")
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(2)
         logger.log_info("Start video capture.")
     except Exception as e:
         logger.log_error("An unexpected error occurred while Start video capture", e)
