@@ -9,7 +9,7 @@ import mediapipe as mp
 import warnings
 warnings.filterwarnings('ignore')
 
-def main(filename, player):    
+def main(player, filename):    
       # Initialize MediaPipe Pose
       mp_pose = mp.solutions.pose
       pose_mp = mp_pose.Pose()
@@ -26,7 +26,7 @@ def main(filename, player):
       # Initialize drawing utility
       mp_drawing = mp.solutions.drawing_utils
       mp_drawing_styles = mp.solutions.drawing_styles
-      cap = cv2.VideoCapture(0)
+      cap = cv2.VideoCapture(2)
 
       poses = {"free_Shrek": 0, "free_Robot": 0, "free_Center": 0, "free_Tablet":0, "glance_Shrek": 0, "glance_Robot": 0, "glance_Center": 0, "glance_Tablet":0 }
       data = {"Shrek":[], "Robot":[], "Center":[], "Tablet":[]}
@@ -65,20 +65,6 @@ def main(filename, player):
                   results_m = face_mesh.process(rgb_frame)
                   
                   temp = []
-                  if results.pose_landmarks:
-                  # Draw the pose landmarks on the frame
-                        mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-
-
-                        # Get shoulder landmarks
-                        landmarks = results.pose_landmarks.landmark
-                        landmarks = landmarks[:13]
-
-                        
-                        for l in landmarks:
-                              temp += [l.x, l.y, l.z]
-                        
-
 
                   if results_m.multi_face_landmarks:
                   #break
@@ -97,20 +83,22 @@ def main(filename, player):
                                     landmark_drawing_spec=None,
                                     connection_drawing_spec=mp_drawing_styles
                                     .get_default_face_mesh_iris_connections_style())
-                              
-      
-                              # Show the frame
-                              cv2.imshow('Body Tracking', frame)
-
+                                    
                               data_pose.append(temp)
-                        
-                              if "free_" in pose:
-                                    pose = pose[5:]
-                              if "glance_" in pose:
-                                    pose = pose[7:]
-                              print(pose)
-                              i += 1
-                              print(i)
+                              print(temp)
+      
+                                    
+                  cv2.imshow('Body Tracking', frame)
+                  i += 1
+                  print(i)                
+                                    
+                              
+            if "free_" in pose:
+                  pose = pose[5:]
+            if "glance_" in pose:
+                  pose = pose[7:]
+            print(pose)
+            
 
             data[pose] += data_pose
             

@@ -21,19 +21,24 @@ def getData():
     pose = ""
     X = []
     y = []
-    l = ["./data/player1"]
-    #l = [".\\data\\train"]
+    #l = ["./data/player0"]
+    l = [".\\data\\player0"]
     w = 0
+    i=0
     for ls in l:
         os.chdir(ls)    
         for file in glob.glob("*.tsv"):    
             with open(file, encoding="utf-8") as file:       
                 tsv_file = csv.reader(file, delimiter="\t")
                 for line in tsv_file:
+                    #print(len(line))
+                    
                     if len(line) == 1:
                         pose = line[0]
+                    elif len(line) == 0:
+                        pass
                     else:
-                        #if len(line) == 45:
+                        #if len(line) == 39:
                         X.append(line)
                         y.append(pose)
         os.chdir("../..")
@@ -63,8 +68,8 @@ def training(X,y):
 
 def trainingAll(X,y):
     
-    rbf = svm.SVC(kernel='rbf', gamma=0.5, C=0.1).fit(X, y)
-    poly = svm.SVC(kernel='poly', degree=3, C=1).fit(X, y)
+    rbf = svm.SVC(kernel='rbf_player0', gamma=0.5, C=0.1).fit(X, y)
+    poly = svm.SVC(kernel='poly_player0', degree=3, C=1).fit(X, y)
 
     return poly, rbf
 
@@ -85,7 +90,7 @@ def run(poly,rbf):
     # Initialize drawing utility
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)
 
     while True:
         ret, frame = cap.read()
@@ -100,18 +105,6 @@ def run(poly,rbf):
         results_m = face_mesh.process(rgb_frame)
         
         temp = []
-        if results.pose_landmarks:
-            # Draw the pose landmarks on the frame
-            mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-
-           
-            # Get shoulder landmarks
-            landmarks = results.pose_landmarks.landmark
-            landmarks = landmarks[:13]
-
-            
-            for l in landmarks:
-                temp += [l.x, l.y, l.z]
 
             
         if results_m.multi_face_landmarks:
@@ -119,7 +112,7 @@ def run(poly,rbf):
             for face_landmarks in results_m.multi_face_landmarks:
 
                 left = face_landmarks.landmark[468]
-                print([left.x, left.y, left.z])
+                #print([left.x, left.y, left.z])
                 right = face_landmarks.landmark[473]
                 temp += [left.x, left.y, left.z, right.x, right.y, right.z]
 
@@ -132,14 +125,14 @@ def run(poly,rbf):
                     connection_drawing_spec=mp_drawing_styles
                         .get_default_face_mesh_iris_connections_style())
             
-            
-            poly_pred = poly.predict([temp])
-            rbf_pred = rbf.predict([temp])
-            print(poly_pred[0]+" "+ rbf_pred[0])
-            cv2.putText(frame, "poly: {}".format(poly_pred[0]), (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-            cv2.putText(frame, "rbf: {}".format(rbf_pred[0]), (10, 90),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+        
+                poly_pred = poly.predict([temp])
+                rbf_pred = rbf.predict([temp])
+                print(poly_pred[0]+" "+ rbf_pred[0])
+                cv2.putText(frame, "poly: {}".format(poly_pred[0]), (10, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+                cv2.putText(frame, "rbf: {}".format(rbf_pred[0]), (10, 90),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
             
         # Show the frame
         cv2.imshow('Body Tracking', frame)
@@ -159,9 +152,9 @@ X, y = getData()
 print("start train")
 poly, rbf = training(X,y)
 print("end train")
-joblib.dump(poly, 'poly.pkl')
-joblib.dump(rbf, 'rbf.pkl')
+joblib.dump(poly, 'poly_player0.pkl')
+joblib.dump(rbf, 'rbf_player0.pkl')
 #os.chdir(".\\data")
-#poly = joblib.load('poly.pkl')
-#rbf = joblib.load('rbf.pkl')
+poly = joblib.load('poly_player0.pkl')
+rbf = joblib.load('rbf_player0.pkl')
 run(poly,rbf)

@@ -20,7 +20,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
 # Start video capture
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2)
 
 while True:
     ret, frame = cap.read()
@@ -33,22 +33,6 @@ while True:
     # Process the frame with MediaPipe Pose
     results = pose.process(rgb_frame)
     results_m = face_mesh.process(rgb_frame)
-    
-    if results.pose_landmarks:
-        # Draw the pose landmarks on the frame
-        mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-
-        
-        
-        # Get shoulder landmarks
-        landmarks = results.pose_landmarks.landmark
-        landmarks = landmarks[:13]
-
-        i =0
-
-        temp = []
-        for l in landmarks:
-            temp += [l.x, l.y, l.z]
             
 
 
@@ -59,7 +43,7 @@ while True:
             left = face_landmarks.landmark[468]
             print([left.x, left.y, left.z])
             right = face_landmarks.landmark[473]
-            temp += [left.x, left.y, left.z, right.x, right.y, right.z]
+            temp = [left.x, left.y, left.z, right.x, right.y, right.z]
 
 
 

@@ -79,7 +79,7 @@ def main():
         ret, frame = cap.read()
         if not ret:
             break
-        
+        temp = []
         # Convert the frame to RGB for MediaPipe processing
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
@@ -120,14 +120,14 @@ def main():
                     connection_drawing_spec=mp_drawing_styles
                         .get_default_face_mesh_iris_connections_style())
                 
+        if len(temp)> 0:    
+            poly_pred = poly.predict([temp])
+            print(poly_pred[0].encode())
+            logger.log_message("Current gaze target", poly_pred[0])
+            logger.log_message("vector",str(temp) )
+            if socket:
+                sGaze.send(poly_pred[0].encode())
             
-        poly_pred = poly.predict([temp])
-        print(poly_pred[0].encode())
-        logger.log_message("Current gaze target", poly_pred[0])
-        logger.log_message("vector",str(temp) )
-        if socket:
-            sGaze.send(poly_pred[0].encode())
-        
         cv2.imshow('Body Tracking', frame)
         # Break the loop with 'q'
         if cv2.waitKey(1) & 0xFF == ord('q'):
