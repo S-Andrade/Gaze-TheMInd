@@ -39,7 +39,7 @@ def getData():
                         pass
                     else:
                         #if len(line) == 39:
-                        X.append(line)
+                        X.append(line[-6:])
                         y.append(pose)
         os.chdir("../..")
     X = np.array(X)
@@ -90,7 +90,7 @@ def run(poly,rbf):
     # Initialize drawing utility
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(3)
 
     while True:
         ret, frame = cap.read()
@@ -105,6 +105,16 @@ def run(poly,rbf):
         results_m = face_mesh.process(rgb_frame)
         
         temp = []
+        
+        
+        """if results.pose_landmarks:
+            
+            landmarks = results.pose_landmarks.landmark
+            landmarks = landmarks[:9]
+
+            temp = []
+            for l in landmarks:
+                    temp += [l.x, l.y, l.z]"""
 
             
         if results_m.multi_face_landmarks:
@@ -154,7 +164,7 @@ poly, rbf = training(X,y)
 print("end train")
 joblib.dump(poly, 'poly_player0.pkl')
 joblib.dump(rbf, 'rbf_player0.pkl')
-#os.chdir(".\\data")
+
 poly = joblib.load('poly_player0.pkl')
 rbf = joblib.load('rbf_player0.pkl')
 run(poly,rbf)

@@ -20,9 +20,10 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
 # Start video capture
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(3)
 
 while True:
+    temp = []
     ret, frame = cap.read()
     if not ret:
         break
@@ -33,9 +34,22 @@ while True:
     # Process the frame with MediaPipe Pose
     results = pose.process(rgb_frame)
     results_m = face_mesh.process(rgb_frame)
+
+    if results.pose_landmarks:
+                        
+            mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+            # Get shoulder landmarks
+            landmarks = results.pose_landmarks.landmark
+            landmarks = landmarks[:9]
+
+            i =0
+
+            temp = []
+            for l in landmarks:
+                temp += [l.x, l.y, l.z]
+
             
-
-
     if results_m.multi_face_landmarks:
         #break
         for face_landmarks in results_m.multi_face_landmarks:
@@ -43,7 +57,7 @@ while True:
             left = face_landmarks.landmark[468]
             print([left.x, left.y, left.z])
             right = face_landmarks.landmark[473]
-            temp = [left.x, left.y, left.z, right.x, right.y, right.z]
+            temp += [left.x, left.y, left.z, right.x, right.y, right.z]
 
 
 
@@ -58,7 +72,7 @@ while True:
                 connection_drawing_spec=mp_drawing_styles
                     .get_default_face_mesh_iris_connections_style())
             
-        
+    print(len(temp))
     # Show the frame
     cv2.imshow('Body Tracking', frame)
     

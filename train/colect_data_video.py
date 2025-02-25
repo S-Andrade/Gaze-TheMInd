@@ -27,6 +27,8 @@ def main(player, filename):
       mp_drawing = mp.solutions.drawing_utils
       mp_drawing_styles = mp.solutions.drawing_styles
       cap = cv2.VideoCapture(3)
+      frame_width = int(cap.get(3))
+      frame_height = int(cap.get(4))
 
       poses = {"free_Shrek": 0, "free_Robot": 0, "free_Center": 0, "free_Tablet":0, "glance_Shrek": 0, "glance_Robot": 0, "glance_Center": 0, "glance_Tablet":0 }
       data = {"Shrek":[], "Robot":[], "Center":[], "Tablet":[]}
@@ -34,6 +36,8 @@ def main(player, filename):
 
 
       previous = "glance_"
+      
+      filen = 0
 
       for iteration in range(32):
             pos = [label for label, value in poses.items() if value < 4 and previous not in label]
@@ -50,48 +54,22 @@ def main(player, filename):
             playsound(f)
             print(poses)
 
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            out = cv2.VideoWriter(f"videos\\{player}\\{filename}_{pose}_{filen}.avi", fourcc, 20.0, (frame_width, frame_height))
+            filen += 1
+            input()
+
             i = 0
-            data_pose = []
-            while i < 50:
+            
+            while i < 100:
                   ret, frame = cap.read()
                   if not ret:
                         break
-                  
-                  # Convert the frame to RGB for MediaPipe processing
-                  rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                  
-                  # Process the frame with MediaPipe Pose
-                  results = pose_mp.process(rgb_frame)
-                  results_m = face_mesh.process(rgb_frame)
-                  
-                  temp = []
+                  #cv2.imshow('Video', frame)
+                  out.write(frame)              
+                  i += 1                 
+            playsound("bip.mp3")
 
-                  if results.pose_landmarks:
-                        
-                        landmarks = results.pose_landmarks.landmark
-                        landmarks = landmarks[:9]
-
-                        temp = []
-                        for l in landmarks:
-                              temp += [l.x, l.y, l.z]
-
-                  if results_m.multi_face_landmarks:
-                  #break
-                        for face_landmarks in results_m.multi_face_landmarks:
-
-                              left = face_landmarks.landmark[468]
-                              
-                              right = face_landmarks.landmark[473]
-                              temp += [left.x, left.y, left.z, right.x, right.y, right.z]
-
-                  if len(temp) == 33:              
-                        data_pose.append(temp)
-                        i += 1
-                        print(i)            
-                  #cv2.imshow('Body Tracking', frame)
-                                  
-                                    
-                              
             if "free_" in pose:
                   pose = pose[5:]
             if "glance_" in pose:
@@ -99,16 +77,10 @@ def main(player, filename):
             print(pose)
             
 
-            data[pose] += data_pose
+           
             
     
       playsound("bip.mp3")
-      filename = "data/" + player + "/"+ filename + ".tsv"
-      with open(filename, 'w', encoding='utf8', newline='') as tsv_file:
-                  tsv_writer = csv.writer(tsv_file, delimiter='\t', lineterminator='\n')
-                  for pose in data.keys():
-                        tsv_writer.writerow([pose])
-                        for line in data[pose]:
-                              tsv_writer.writerow(line)
+ 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2])
