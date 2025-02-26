@@ -1,12 +1,39 @@
-
-import socket           
-import sys
+from sklearn import svm, datasets
+import sklearn.model_selection as model_selection
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+import csv
+import numpy as np
+import time
+import glob, os
 import joblib
-from gaze_logger import init_logger
+from sklearn import model_selection
+from sklearn import svm
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+import numpy as np
 import cv2
-import mediapipe as mp
 import warnings
 warnings.filterwarnings('ignore')
+import argparse
+import numpy as np
+import cv2
+import time
+import sys
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+from torchvision import transforms
+import torch.backends.cudnn as cudnn
+import torchvision
+sys.path.append('..\\')
+from PIL import Image
+from utils import select_device, draw_gaze
+from PIL import Image, ImageOps
+
+from face_detection import RetinaFace
+from model import L2CS
+from gaze_logger import init_logger
 
 
 
@@ -29,114 +56,107 @@ def main():
         msgaze = "Client " + str(sys.argv[1]) + " gaze"
         sGaze.send(msgaze.encode())
         logger.log_message("Identify participant gauze", msgaze)
+
+    if str(sys.argv[1]) == "0":
+        poly = joblib.load('train\\poly_player0.pkl')
+    if str(sys.argv[1]) == "1":
+        poly = joblib.load('train\\poly_player1.pkl')
     
-    try:
-        logger.log_info("Initialize MediaPipe Pose...")
-        mp_pose = mp.solutions.pose
-        pose = mp_pose.Pose()
+    cudnn.enabled = True
+    arch="ResNet50"
+    batch_size = 1
+    gpu = select_device('0', batch_size=batch_size)
+    snapshot_path = "..\\models\\L2CSNet_gaze360.pkl"
+   
+    
 
-        # Initialize drawing utility
-        mp_drawing = mp.solutions.drawing_utils
-
-        mp_face_mesh = mp.solutions.face_mesh
-        # Setup Face Mesh with iris tracking
-        face_mesh = mp_face_mesh.FaceMesh(
-            max_num_faces=1,
-            refine_landmarks=True,  # Enables iris landmarks
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
+    transformations = transforms.Compose([
+        transforms.Resize(448),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
         )
-
-        # Initialize drawing utility
-        mp_drawing = mp.solutions.drawing_utils
-        mp_drawing_styles = mp.solutions.drawing_styles
-
-        logger.log_info("Initialize MediaPipe Pose.")
-    except Exception as e:
-            logger.log_exception("An unexpected error occurred while Initialize MediaPipe Pose", e)
-            raise
+    ])
     
-    try:
-        logger.log_info("Start video capture...")
-        cap = cv2.VideoCapture(2)
-        logger.log_info("Start video capture.")
-    except Exception as e:
-        logger.log_error("An unexpected error occurred while Start video capture", e)
-        raise
+    model=L2CS( torchvision.models.resnet.Bottleneck, [3, 4, 6,  3], 90)
+    print('Loading snapshot.')
+    saved_state_dict = torch.load(snapshot_path)
+    model.load_state_dict(saved_state_dict)
+    model.cuda(gpu)
+    model.eval()
 
-    try:
-        logger.log_info("Loading SVM model...")
-        poly = joblib.load('poly.pkl')
-        logger.log_info("SVM model loaded successfully.")
-    except FileNotFoundError:
-        logger.log_error("SVM model file not found.")
-        raise
-    except Exception as e:
-        logger.log_error("An unexpected error occurred while loading the SVM model", e)
-        raise
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        temp = []
-        # Convert the frame to RGB for MediaPipe processing
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Process the frame with MediaPipe Pose
-        results = pose.process(rgb_frame)
-        results_m = face_mesh.process(rgb_frame)
-        
-        if results.pose_landmarks:
-                        
-            mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+    softmax = nn.Softmax(dim=1)
+    detector = RetinaFace(gpu_id=0)
+    idx_tensor = [idx for idx in range(90)]
+    idx_tensor = torch.FloatTensor(idx_tensor).cuda(gpu)
+    x=0
 
-            # Get shoulder landmarks
-            landmarks = results.pose_landmarks.landmark
-            landmarks = landmarks[:13]
+      
+    cap = cv2.VideoCapture(2)
 
-            i =0
+    # Check if the webcam is opened correctly
+    if not cap.isOpened():
+        raise IOError("Cannot open webcam")
 
-            temp = []
-            for l in landmarks:
-                temp += [l.x, l.y, l.z]
+    with torch.no_grad():
+        while True:
+            success, frame = cap.read()    
+            start_fps = time.time()  
+           
+            faces = detector(frame)
+            if faces is not None: 
+                for box, landmarks, score in faces:
+                    if score < .95:
+                        continue
+                    x_min=int(box[0])
+                    if x_min < 0:
+                        x_min = 0
+                    y_min=int(box[1])
+                    if y_min < 0:
+                        y_min = 0
+                    x_max=int(box[2])
+                    y_max=int(box[3])
+                    bbox_width = x_max - x_min
+                    bbox_height = y_max - y_min
+                    # x_min = max(0,x_min-int(0.2*bbox_height))
+                    # y_min = max(0,y_min-int(0.2*bbox_width))
+                    # x_max = x_max+int(0.2*bbox_height)
+                    # y_max = y_max+int(0.2*bbox_width)
+                    # bbox_width = x_max - x_min
+                    # bbox_height = y_max - y_min
 
-        
-        if results_m.multi_face_landmarks:
-        #break
-            for face_landmarks in results_m.multi_face_landmarks:
+                    # Crop image
+                    img = frame[y_min:y_max, x_min:x_max]
+                    img = cv2.resize(img, (224, 224))
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    im_pil = Image.fromarray(img)
+                    img=transformations(im_pil)
+                    img  = Variable(img).cuda(gpu)
+                    img  = img.unsqueeze(0) 
+                    
+                    # gaze prediction
+                    gaze_pitch, gaze_yaw = model(img)
+                    
+                    
+                    pitch_predicted = softmax(gaze_pitch)
+                    yaw_predicted = softmax(gaze_yaw)
+                    
+                    # Get continuous predictions in degrees.
+                    pitch_predicted = torch.sum(pitch_predicted.data[0] * idx_tensor) * 4 - 180
+                    yaw_predicted = torch.sum(yaw_predicted.data[0] * idx_tensor) * 4 - 180
+                    
+                    pitch_predicted= pitch_predicted.cpu().detach().numpy()* np.pi/180.0
+                    yaw_predicted= yaw_predicted.cpu().detach().numpy()* np.pi/180.0
 
-                left = face_landmarks.landmark[468]
-                print([left.x, left.y, left.z])
-                right = face_landmarks.landmark[473]
-                temp += [left.x, left.y, left.z, right.x, right.y, right.z]
-
-                # Draw iris landmarks
-                mp_drawing.draw_landmarks(
-                    image=frame,
-                    landmark_list=face_landmarks,
-                    connections=mp_face_mesh.FACEMESH_IRISES,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=mp_drawing_styles
-                        .get_default_face_mesh_iris_connections_style())
-                
-        if len(temp)> 0:    
-            poly_pred = poly.predict([temp])
-            print(poly_pred[0].encode())
-            logger.log_message("Current gaze target", poly_pred[0])
-            logger.log_message("vector",str(temp) )
-            if socket:
-                sGaze.send(poly_pred[0].encode())
-            
-        cv2.imshow('Body Tracking', frame)
-        # Break the loop with 'q'
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    # Release the capture and close windows
-    cap.release()
-    cv2.destroyAllWindows()
-
+                    poly_pred = poly.predict([[pitch_predicted, yaw_predicted]])
+                    print(poly_pred[0].encode())
+                    if socket:
+                        sGaze.send(poly_pred[0].encode())
+                    
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
 
 if __name__ == "__main__":
     main()
