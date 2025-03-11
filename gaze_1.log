@@ -1,0 +1,15 @@
+2025-03-11 23:03:03,357 - INFO - Connecting to DecisionMaker...
+2025-03-11 23:03:03,357 - ERROR - An unexpected error occurred while connecting to DecisonMaker: 'bool' object has no attribute 'socket'
+Traceback (most recent call last):
+  File ".\gazeclient.py", line 47, in main
+    sGaze = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+AttributeError: 'bool' object has no attribute 'socket'
+2025-03-11 23:04:38,015 - INFO - Connecting to DecisionMaker...
+2025-03-11 23:04:38,016 - INFO - Connected to DecisionMaker.
+2025-03-11 23:04:38,016 - INFO - Identify participant gaze - Client 1 gaze
+2025-03-11 23:12:51,961 - INFO - Connecting to DecisionMaker...
+2025-03-11 23:12:51,962 - INFO - Connected to DecisionMaker.
+2025-03-11 23:12:51,962 - INFO - Identify participant gaze - Client 1 gaze
+2025-03-11 23:31:34,878 - INFO - Connecting to DecisionMaker...
+2025-03-11 23:31:34,879 - INFO - Connected to DecisionMaker.
+2025-03-11 23:31:34,879 - INFO - Identify participant gaze - Client 1 gaze
