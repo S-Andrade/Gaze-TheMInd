@@ -94,7 +94,7 @@ def main():
     x=0
 
       
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(1)
 
     # Check if the webcam is opened correctly
     if not cap.isOpened():
