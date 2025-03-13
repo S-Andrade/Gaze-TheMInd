@@ -11,4 +11,4 @@ while True:
     cap.release()
     index += 1
 
-print(arr)
+print(ar)

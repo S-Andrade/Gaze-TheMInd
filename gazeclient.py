@@ -35,17 +35,17 @@ from face_detection import RetinaFace
 from model import L2CS
 from gaze_logger import init_logger
 
-
+import socket
 
 def main():
     logger = init_logger(str(sys.argv[1]), f"gaze_{str(sys.argv[1])}.log") 
-    socket = False
-    if sys.argv[1] == "--socket":
-        socket = True
+    sock = False
+    if sys.argv[2] == "--socket":
+        sock = True
         try:
             logger.log_info("Connecting to DecisionMaker...")
             sGaze = socket.socket(socket.AF_INET, socket.SOCK_STREAM)         
-            sGaze.connect(('127.0.0.1', 50002))
+            sGaze.connect(('192.168.0.100', 50009))
             logger.log_info("Connected to DecisionMaker.")
         except ConnectionRefusedError:
             logger.log_error("Connectionto DecisionMaker Refused.")
@@ -104,7 +104,7 @@ def main():
         while True:
             success, frame = cap.read()    
             start_fps = time.time()  
-           
+            cv2.imshow("sdf", frame)
             faces = detector(frame)
             if faces is not None: 
                 for box, landmarks, score in faces:
@@ -152,7 +152,8 @@ def main():
 
                     poly_pred = poly.predict([[pitch_predicted, yaw_predicted]])
                     print(poly_pred[0].encode())
-                    if socket:
+                    logger.log_message("Target", f"{poly_pred[0]} - {pitch_predicted} - {yaw_predicted}")
+                    if sock:
                         sGaze.send(poly_pred[0].encode())
                     
             if cv2.waitKey(1) & 0xFF == 27:

@@ -26,7 +26,7 @@ def main(player, filename):
       # Initialize drawing utility
       mp_drawing = mp.solutions.drawing_utils
       mp_drawing_styles = mp.solutions.drawing_styles
-      cap = cv2.VideoCapture(3)
+      cap = cv2.VideoCapture(1)
       frame_width = int(cap.get(3))
       frame_height = int(cap.get(4))
 
@@ -39,10 +39,10 @@ def main(player, filename):
       
       filen = 0
 
-      for iteration in range(32):
-            pos = [label for label, value in poses.items() if value < 4 and previous not in label]
+      for iteration in range(8):
+            pos = [label for label, value in poses.items() if value < 1 and previous not in label]
             if pos == [] :
-                  pos = [label for label, value in poses.items() if value < 4]
+                  pos = [label for label, value in poses.items() if value < 1]
             pose = random.choice(pos)
             poses[pose] += 1
             if "free_" in pose:
