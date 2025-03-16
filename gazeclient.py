@@ -46,7 +46,7 @@ def main():
         try:
             logger.log_info("Connecting to DecisionMaker...")
             sGaze = socket.socket(socket.AF_INET, socket.SOCK_STREAM)         
-            sGaze.connect(('192.168.1.169', 50009))
+            sGaze.connect(('192.168.0.100', 50009))
             logger.log_info("Connected to DecisionMaker.")
         except ConnectionRefusedError:
             logger.log_error("Connectionto DecisionMaker Refused.")
@@ -95,17 +95,19 @@ def main():
     x=0
 
       
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(3)
 
+    print("cap")
     # Check if the webcam is opened correctly
     if not cap.isOpened():
         raise IOError("Cannot open webcam")
 
     with torch.no_grad():
         while True:
+        
             success, frame = cap.read()    
             start_fps = time.time()  
-           
+            cv2.imshow('Body Tracking', frame)
             faces = detector(frame)
             if faces is not None: 
                 for box, landmarks, score in faces:
@@ -153,6 +155,7 @@ def main():
 
                     poly_pred = poly.predict([[pitch_predicted, yaw_predicted]])
                     print(poly_pred[0].encode())
+                    logger.log_message("Target", f"{poly_pred[0]} - {pitch_predicted} - {yaw_predicted}")
                     if sock:
                         sGaze.send(poly_pred[0].encode())
                     

@@ -67,12 +67,14 @@ def getData():
     x=0
 
     targets = ["Shrek","Robot","Tablet","Center"]
+    colors = [(0,0,255), (0,255,0), (225,0,0)]
+    i = 0
 
     pose = ""
     X = []
     y = []
     #l = ["./data/player0"]
-    l = [".\\videos\\player1"]
+    l = [".\\videos\\player0"]
     for ls in l:
         os.chdir(ls)    
         for file in glob.glob("*.avi"): 
@@ -80,6 +82,7 @@ def getData():
             cap = cv2.VideoCapture(file)
             with torch.no_grad():
                 while cap.isOpened():
+                    i = 0
                     success, frame = cap.read()
                     if not success:
                         break   
@@ -126,8 +129,12 @@ def getData():
                             X += [[pitch_predicted, yaw_predicted]]
                             y += [pose]
                             
-                            #draw_gaze(x_min,y_min,bbox_width, bbox_height,frame,(pitch_predicted,yaw_predicted),color=(0,0,255))
-                            #cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0,255,0), 1)
+                            #draw_gaze(x_min,y_min,bbox_width, bbox_height,frame,(pitch_predicted,yaw_predicted),color=colors[i])
+                            #cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), colors[i], 1)
+                            #if i == 2:
+                            #    i = 0
+                            #else:
+                            #    i += 1
                     #myFPS = 1.0 / (time.time() - start_fps)
                     #cv2.putText(frame, 'FPS: {:.1f}'.format(myFPS), (10, 20),cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 1, cv2.LINE_AA)
                     
@@ -284,9 +291,9 @@ print(len(X))
 print(len(y))
 print("start train")
 poly, rbf = training(X,y)
-print("end train")
-joblib.dump(poly, 'poly_player1.pkl')
-joblib.dump(rbf, 'rbf_player1.pkl')
+#print("end train")
+#joblib.dump(poly, 'poly_player1.pkl')
+#joblib.dump(rbf, 'rbf_player1.pkl')
 
 """poly = joblib.load('poly_player0.pkl')
 rbf = joblib.load('rbf_player0.pkl')
