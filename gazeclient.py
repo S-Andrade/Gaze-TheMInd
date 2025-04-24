@@ -40,13 +40,14 @@ import socket
 
 def main():
     logger = init_logger(str(sys.argv[1]), f"gaze_{str(sys.argv[1])}.log") 
+    logger.log_info("start")
     sock = False
     if sys.argv[2] == "--socket":
         sock = True
         try:
             logger.log_info("Connecting to DecisionMaker...")
             sGaze = socket.socket(socket.AF_INET, socket.SOCK_STREAM)         
-            sGaze.connect(('192.168.0.100', 50009))
+            sGaze.connect(('192.168.0.103', 50009))
             logger.log_info("Connected to DecisionMaker.")
         except ConnectionRefusedError:
             logger.log_error("Connectionto DecisionMaker Refused.")
